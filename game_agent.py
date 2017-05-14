@@ -346,5 +346,66 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        max_value_move = self.__get_max_value_move(game, depth, alpha, beta)
+        print("max value move:")
+        print(max_value_move)
+        return max_value_move
+
+    def __get_max_value_move(self, game, max_depth, alpha, beta):
+        legal_moves = game.get_legal_moves(self)
+        if legal_moves is None or len(legal_moves) == 0:
+            return (-1, -1)
+
+        move_value_dict = {}
+        current_depth = 0
+        max_value = float("-inf")
+        for move in legal_moves:
+            value = self.__min_value_for_move(game, move, current_depth, max_depth, alpha, beta)
+            max_value = max(max_value, value)
+            move_value_dict[move] = value
+            if max_value >= beta:
+                return move
+            alpha = max(alpha, max_value)
+
+        return max(move_value_dict, key=move_value_dict.get)
+
+    def __min_value_for_move(self, game, move, current_depth, max_depth, alpha, beta):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        game_copy = game.forecast_move(move)
+        current_depth += 1
+        next_legal_moves = game_copy.get_legal_moves(game_copy.active_player)
+        if next_legal_moves is None or len(next_legal_moves) == 0 or current_depth >= max_depth:
+            return self.score(game_copy, self)
+
+        min_value = float("inf")
+        for next_move in next_legal_moves:
+            min_value = min(min_value, self.__max_value_for_move(game_copy, next_move, current_depth, max_depth, alpha, beta))
+            if min_value <= alpha:
+                return min_value
+            beta = min(min_value, beta)
+            if alpha >= beta:
+                return beta
+
+        return min_value
+
+    def __max_value_for_move(self, game, move, current_depth, max_depth, alpha, beta):
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        game_copy = game.forecast_move(move)
+        current_depth += 1
+        next_legal_moves = game_copy.get_legal_moves(game_copy.active_player)
+        if next_legal_moves is None or len(next_legal_moves) == 0 or current_depth >= max_depth:
+            return self.score(game_copy, self)
+
+        max_value = float("-inf")
+        for next_move in next_legal_moves:
+            max_value = max(max_value, self.__min_value_for_move(game_copy, next_move, current_depth, max_depth, alpha, beta))
+            if max_value >= beta:
+                return max_value
+            alpha = max(alpha, max_value)
+
+        return max_value
