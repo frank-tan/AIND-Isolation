@@ -216,9 +216,46 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        max_value_move = self.__get_max_value_move(game, depth)
+        print("max value move:")
+        print(max_value_move)
+        return max_value_move
 
+    def __get_max_value_move(self, game, max_depth):
+        legal_moves = game.get_legal_moves(self)
+        if legal_moves is None or len(legal_moves) == 0:
+            return (-1, -1)
+
+        move_value_dict = {}
+        current_depth = 0
+        for move in legal_moves:
+            move_value_dict[move] = self.__min_value_for_move(game, move, current_depth, max_depth)
+
+        print("move_value_dict")
+        print(move_value_dict)
+        return max(move_value_dict, key=move_value_dict.get)
+
+    def __min_value_for_move(self, game, move, current_depth, max_depth):
+        return self.__get_value_for_move(game, move, current_depth, max_depth, self.__max_value_for_move, min)
+
+    def __max_value_for_move(self, game, move, current_depth, max_depth):
+        return self.__get_value_for_move(game, move, current_depth, max_depth, self.__min_value_for_move, max)
+
+    def __get_value_for_move(self, game, move, current_depth, max_depth, get_next_move_value_fn, policy_fn):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        game_copy = game.forecast_move(move)
+        current_depth += 1
+        next_legal_moves = game_copy.get_legal_moves(game_copy.active_player)
+        if next_legal_moves is None or len(next_legal_moves) == 0 or current_depth >= max_depth:
+            return self.score(game_copy, self)
+
+        values_for_moves_array  = []
+        for next_move in next_legal_moves:
+            values_for_moves_array.append(get_next_move_value_fn(game_copy, next_move, current_depth, max_depth))
+
+        return policy_fn(values_for_moves_array)
 
 class AlphaBetaPlayer(IsolationPlayer):
     """Game-playing agent that chooses a move using iterative deepening minimax
