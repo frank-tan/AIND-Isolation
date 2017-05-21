@@ -2,7 +2,6 @@
 test your agent's strength against a set of known agents using tournament.py
 and include the results in your report.
 """
-import random
 
 
 class SearchTimeout(Exception):
@@ -64,6 +63,7 @@ def custom_score(game, player):
 
     return float(my_possible_moves - 0.5 * opponent_possible_moves)
 
+
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
@@ -123,6 +123,7 @@ def custom_score_2(game, player):
         return float(my_possible_moves - opponent_possible_moves)
     return float(my_possible_moves - 0.5 * opponent_possible_moves)
 
+
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
@@ -163,6 +164,7 @@ def custom_score_3(game, player):
     if occupied_rate < 0.4:
         return float(len_my_possible_moves - 0.5 * len_opponent_possible_moves)
     return float(best_advantage_in_next_move(game, player, my_possible_moves))
+
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
@@ -292,7 +294,7 @@ class MinimaxPlayer(IsolationPlayer):
     def __get_max_value_move(self, game, max_depth):
         legal_moves = game.get_legal_moves(self)
         if legal_moves is None or len(legal_moves) == 0:
-            return (-1, -1)
+            return -1, -1
 
         move_value_dict = {}
         current_depth = 0
@@ -317,11 +319,12 @@ class MinimaxPlayer(IsolationPlayer):
         if next_legal_moves is None or len(next_legal_moves) == 0 or current_depth >= max_depth:
             return self.score(game_copy, self)
 
-        values_for_moves_array  = []
+        values_for_moves_array = []
         for next_move in next_legal_moves:
             values_for_moves_array.append(get_next_move_value_fn(game_copy, next_move, current_depth, max_depth))
 
         return policy_fn(values_for_moves_array)
+
 
 class AlphaBetaPlayer(IsolationPlayer):
     """Game-playing agent that chooses a move using iterative deepening minimax
@@ -433,7 +436,7 @@ class AlphaBetaPlayer(IsolationPlayer):
     def __get_max_value_move(self, game, max_depth, alpha, beta):
         legal_moves = game.get_legal_moves(self)
         if legal_moves is None or len(legal_moves) == 0:
-            return (-1, -1)
+            return -1, -1
 
         move_value_dict = {}
         current_depth = 0
@@ -460,7 +463,8 @@ class AlphaBetaPlayer(IsolationPlayer):
 
         min_value = float("inf")
         for next_move in next_legal_moves:
-            min_value = min(min_value, self.__max_value_for_move(game_copy, next_move, current_depth, max_depth, alpha, beta))
+            min_value = min(min_value, self.__max_value_for_move(game_copy, next_move, current_depth,
+                                                                 max_depth, alpha, beta))
             if min_value <= alpha:
                 return min_value
             beta = min(min_value, beta)
@@ -482,7 +486,8 @@ class AlphaBetaPlayer(IsolationPlayer):
 
         max_value = float("-inf")
         for next_move in next_legal_moves:
-            max_value = max(max_value, self.__min_value_for_move(game_copy, next_move, current_depth, max_depth, alpha, beta))
+            max_value = max(max_value, self.__min_value_for_move(game_copy, next_move, current_depth, max_depth,
+                                                                 alpha, beta))
             if max_value >= beta:
                 return max_value
             alpha = max(alpha, max_value)
