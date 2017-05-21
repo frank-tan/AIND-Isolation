@@ -18,14 +18,15 @@ class IsolationTest(unittest.TestCase):
 
     def setUp(self):
         reload(game_agent)
-        self.player1 = game_agent.MinimaxPlayer()
+        self.player1 = game_agent.AlphaBetaPlayer()
         self.player2 = GreedyPlayer()
         self.game = isolation.Board(self.player1, self.player2)
 
     def test_play_game(self):
-        winner, history, outcome = self.game.play(1500)
+        winner, history, outcome = self.game.play(150)
         print("\nWinner: {}\nOutcome: {}".format(winner, outcome))
         print(self.game.to_string())
+        print(1-float(len(self.game.get_blank_spaces()))/self.game.width/self.game.height)
         print("Move history:\n{!s}".format(history))
 
 if __name__ == '__main__':

@@ -10,6 +10,25 @@ class SearchTimeout(Exception):
     pass
 
 
+def best_advantage_in_next_move(game, player, possible_moves):
+    if possible_moves is None or len(possible_moves) == 0:
+        return float("-inf")
+
+    paths = []
+    opponent = game.get_opponent(player)
+    for move in possible_moves:
+        game_copy = game.forecast_move(move)
+        if game.is_loser(player):
+            return float("-inf")
+
+        if game.is_winner(player):
+            return float("inf")
+        play_legal_moves = len(game_copy.get_legal_moves(player))
+        opponent_legal_moves = len(game_copy.get_legal_moves(opponent))
+        paths.append(play_legal_moves - 0.5 * opponent_legal_moves)
+    return max(paths)
+
+
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
@@ -40,7 +59,10 @@ def custom_score(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return float(len(game.get_legal_moves(player)) - 2 * len(game.get_legal_moves(game.get_opponent(player))))
+    my_possible_moves = len(game.get_legal_moves(player))
+    opponent_possible_moves = len(game.get_legal_moves(game.get_opponent(player)))
+
+    return float(my_possible_moves - 0.5 * opponent_possible_moves)
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -70,8 +92,36 @@ def custom_score_2(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return float(len(game.get_legal_moves(player)))
+    w, h = game.width / 2., game.height / 2.
+    y, x = game.get_player_location(player)
+    center_distance = float((h - y) ** 2 + (w - x) ** 2)
 
+    my_possible_moves = len(game.get_legal_moves(player))
+    opponent_possible_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    occupied_rate = 1 - float(len(game.get_blank_spaces())) / (game.width * game.height)
+
+    """ 
+    Heuristics 2:
+    
+    At the beginning of the game (less than 10% occupied rate),
+    1. maximise my possible moves,
+    2. minimise my opponent moves and
+    3. on top of #1 and #2, try to get closer to center as we can
+    
+    Afterwards (occupied rate >= 10% and occupied rate <= 30%), 
+    1. maximise my possible moves and
+    2. minimise my opponent moves with same weight
+    
+    Towards the end of a game (30%+ occupied rate):
+    1. maximise my possible moves and
+    2. minimise my opponent moves but with less weight
+    
+    """
+    if occupied_rate < 0.1:
+        return float(my_possible_moves - 0.2 * center_distance - opponent_possible_moves)
+    if occupied_rate < 0.3:
+        return float(my_possible_moves - opponent_possible_moves)
+    return float(my_possible_moves - 0.5 * opponent_possible_moves)
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -101,8 +151,18 @@ def custom_score_3(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return - float(len(game.get_legal_moves(game.get_opponent(player))))
+    my_possible_moves = game.get_legal_moves(player)
+    len_my_possible_moves = len(my_possible_moves)
 
+    opponent = game.get_opponent(player)
+    opponent_possible_moves = game.get_legal_moves(opponent)
+    len_opponent_possible_moves = len(opponent_possible_moves)
+
+    occupied_rate = 1 - float(len(game.get_blank_spaces())) / (game.width * game.height)
+
+    if occupied_rate < 0.4:
+        return float(len_my_possible_moves - 0.5 * len_opponent_possible_moves)
+    return float(best_advantage_in_next_move(game, player, my_possible_moves))
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
@@ -227,8 +287,6 @@ class MinimaxPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         max_value_move = self.__get_max_value_move(game, depth)
-        print("max value move:")
-        print(max_value_move)
         return max_value_move
 
     def __get_max_value_move(self, game, max_depth):
@@ -241,8 +299,6 @@ class MinimaxPlayer(IsolationPlayer):
         for move in legal_moves:
             move_value_dict[move] = self.__min_value_for_move(game, move, current_depth, max_depth)
 
-        print("move_value_dict")
-        print(move_value_dict)
         return max(move_value_dict, key=move_value_dict.get)
 
     def __min_value_for_move(self, game, move, current_depth, max_depth):
@@ -372,8 +428,6 @@ class AlphaBetaPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         max_value_move = self.__get_max_value_move(game, depth, alpha, beta)
-        print("max value move:")
-        print(max_value_move)
         return max_value_move
 
     def __get_max_value_move(self, game, max_depth, alpha, beta):
